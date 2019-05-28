@@ -1,0 +1,86 @@
+{
+	"name": "swift-playgrounds",
+	"displayName": "Swift Playgrounds",
+	"description": "Allows opening and running of Swift playground bundles.",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.33.0"
+	},
+	"categories": [
+		"Debuggers",
+		"Other"
+	],
+	"activationEvents": [
+		"workspaceContains:**/*.playground/Contents.swift",
+		"onCommand:swiftplayground.start"
+	],
+	"main": "./build/extension.js",
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Swift Playground configuration",
+			"properties": {
+				"swift-playgrounds.truncationLength": {
+					"type": "number",
+					"default": 30,
+					"description": "Maximum length of logged variable values. Longer values will be summarized when possible, or truncated."
+				}
+			}
+		},
+		"commands": [
+			{
+				"command": "swiftplayground.start",
+				"title": "Run Swift Playground"
+			}
+		],
+		"menus": {
+			"editor/title": [
+				{
+					"when": "resourceLangId == swift",
+					"command": "swiftplayground.start",
+					"group": "navigation"
+				}
+			]
+		},
+		"languages": [
+			{
+				"id": "swift-playground",
+				"extensions": [
+					".playground"
+				],
+				"aliases": [
+					"Swift Playground",
+					"playground"
+				]
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "webpack --mode production",
+		"webpack": "webpack --mode development",
+		"watch": "webpack --mode development --watch",
+		"test-compile": "tsc -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install"
+	},
+	"devDependencies": {
+		"@types/crypto-js": "^3.1.43",
+		"@types/mathjs": "^5.0.1",
+		"@types/mocha": "^2.2.42",
+		"@types/node": "^10.12.21",
+		"file-loader": "^3.0.1",
+		"ts-loader": "^5.3.3",
+		"tslint": "^5.12.1",
+		"typescript": "^3.3.1",
+		"vscode": "^1.1.28",
+		"webpack": "^4.30.0",
+		"webpack-cli": "^3.3.0"
+	},
+	"dependencies": {
+		"commander": "^2.20.0",
+		"crypto-js": "^3.1.9-1",
+		"mathjs": "^5.9.0",
+		"ndjson": "1.5.0",
+		"preact": "^8.4.2",
+		"preact-compat": "^3.18.5"
+	}
+}
