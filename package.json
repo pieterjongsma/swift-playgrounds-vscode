@@ -2,7 +2,12 @@
 	"name": "swift-playgrounds",
 	"displayName": "Swift Playgrounds",
 	"description": "Allows opening and running of Swift playground bundles.",
+	"publisher": "pieterjongsma",
 	"version": "0.0.1",
+	"repository": {
+		"type": "github",
+		"url": "https://github.com/pieterjongsma/swift-playgrounds-vscode"
+	},
 	"engines": {
 		"vscode": "^1.33.0"
 	},
