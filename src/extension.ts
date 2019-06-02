@@ -34,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}));
 
 	// FIXME: During debug, activate immediately
-	vscode.commands.executeCommand("swiftplayground.start");
+	// vscode.commands.executeCommand("swiftplayground.start");
 }
 
 export function deactivate() {
