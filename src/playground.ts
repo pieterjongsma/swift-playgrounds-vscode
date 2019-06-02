@@ -7,6 +7,30 @@ import { MD5 } from 'crypto-js';
 
 import * as playgroundRuntime from './vscode_playground_runtime.swift';
 
+
+function readdirSyncRecursive(p: string, a: string[] = []): string[] {
+	if (fs.statSync(p).isDirectory()) {
+		fs.readdirSync(p).map(f => readdirSyncRecursive(a[a.push(path.join(p, f)) - 1], a));
+	}
+	return a;
+}
+
+function subtractParentPath(parentPath: string, aPath: string): string | null {
+	const pComps = parentPath.split(path.sep);
+	const comps = aPath.split(path.sep);
+	while (true) {
+		const pComp = pComps.shift();
+		if (pComp === undefined) { break; }
+
+		const comp = comps.shift();
+		if (comp !== pComp) {
+			return null;
+		}
+	}
+	return path.join(...comps);
+}
+
+
 function quoteString(string: string): string {
 	const escapedString = string.replace('"', '\\"');
 	return `"${escapedString}"`;
@@ -34,10 +58,20 @@ export default class Playground {
 		const mainFilePath = path.join(this._scratchPath, 'main.swift');
 		fs.copyFileSync(this._filePath, mainFilePath);
 
+		// Find sibling Sources directory and include the swift files in build
+		const parentDir = path.dirname(this._filePath);
+		const allFiles = readdirSyncRecursive(parentDir)
+			.map(file => subtractParentPath(parentDir, file));
+		const sources = (allFiles.filter(file => !!file) as string[]) // Remove nulls
+			.filter(file => {
+				return file.split(path.sep)[0] === "Sources";
+			}).filter(file => path.extname(file) === ".swift")
+			.map(file => path.join(parentDir, file))
+			.join(" ");
+
 		const q = quoteString;
 		const executable = path.join(this._scratchPath, 'main');
 		const flags = '';
-		const sources = '';
 		const compileCmd = `swiftc \
 -Xfrontend -debugger-support \
 -Xfrontend -playground \
@@ -47,9 +81,9 @@ ${flags} \
 ${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
 		const runCmd = `${q(executable)}`;
 
-		console.log("Executing compile", compileCmd);
+		console.debug("Executing compile", compileCmd);
 		cp.exec(compileCmd, (err, stdout, stderr) => {
-			console.log(err, stdout, stderr);
+			console.debug(err, stdout, stderr);
 
 			if (stdout && stdoutCallback) { stdoutCallback(stdout); }
 			if (stderr && stderrCallback) { stderrCallback(stderr); }
@@ -58,7 +92,7 @@ ${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFold
 				return;
 			}
 
-			console.log("Executing run", runCmd);
+			console.debug("Executing run", runCmd);
 			const child = cp.spawn(runCmd, [], { shell: true, stdio: [null, 'pipe', 'pipe', 'pipe'] }) as any;
 
 			const fd = child.stdio[3]; // `.stdio` is misspecified as a tuple of fixed length
