@@ -35,7 +35,12 @@
 		"commands": [
 			{
 				"command": "swiftplayground.start",
-				"title": "Run Swift Playground"
+				"title": "Run Playground",
+				"group": "navigation",
+				"icon": {
+					"light": "./media/toolbar_icon_light.svg",
+					"dark": "./media/toolbar_icon_dark.svg"
+				}
 			}
 		],
 		"menus": {
