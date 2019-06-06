@@ -5,6 +5,7 @@
 	"publisher": "pieterjongsma",
 	"version": "0.0.2",
 	"icon": "./media/icon.png",
+	"preview": true,
 	"repository": {
 		"type": "github",
 		"url": "https://github.com/pieterjongsma/swift-playgrounds-vscode"
