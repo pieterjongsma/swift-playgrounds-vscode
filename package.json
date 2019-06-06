@@ -4,6 +4,7 @@
 	"description": "Allows opening and running of Swift playground bundles.",
 	"publisher": "pieterjongsma",
 	"version": "0.0.2",
+	"icon": "./media/icon.png",
 	"repository": {
 		"type": "github",
 		"url": "https://github.com/pieterjongsma/swift-playgrounds-vscode"
