@@ -1,12 +1,12 @@
 
 # Swift Playgrounds extension for Visual Studio Code
 
-Swift Playgrounds in Xcode are a great tool to learn Swift. Swift has been available on Linux for some time now, but anything similar to a Playground doesn't exist. This project is an attempt to bring playgrounds to VSCode such that Linux users can also enjoy them.
+Swift Playgrounds in Xcode are a great tool to learn Swift. Swift has been available on Linux for some time now, but anything similar to a Playground doesn't exist. This project is an attempt to bring playgrounds to VSCode such that Linux users can also enjoy them. Or MacOS users that really like VScode of course.
 
 ## Experimental
 
 The current version is very experimental with only a couple of functions implemented (notably runtime variable inspection).
 
-## Installation
+## Call for examples
 
-Install the extension via the extension marketplace in Visual Studio Code.
+The aim is to have Playground functionality as close to Xcode's as possible. There does not seem to be an overview of what this functionality is, making this hard to accomplish. What really helps is examples of Playgrounds that behave differently in Xcode and VScode (using this extension). If you have such an example, please throw it in an issue and I will try to fix the differences. Much appreciated!
