@@ -62,8 +62,6 @@ export default class PlaygroundEditor {
 		const lines = Line.forRecords(this.records);
 		const decorations = lines.map(line => line.decoration());
 
-		console.log("Setting decorations", decorations);
-
 		this.textEditor.setDecorations(this.decorationType, decorations);
 	}
 
