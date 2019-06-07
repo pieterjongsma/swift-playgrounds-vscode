@@ -56,21 +56,34 @@ export default class Playground {
 
 	public run(callback: (json: JSON) => void, stdoutCallback?: (output: string) => void, stderrCallback?: (output: string) => void): Promise<void> {
 		return new Promise((resolve, reject) => {
+			const parentDir = path.dirname(this._filePath);
+
+			// `swiftc` allows top-level expressions only when the file is called 'main.swift'
 			const mainFilePath = path.join(this._scratchPath, 'main.swift');
 			fs.copyFileSync(this._filePath, mainFilePath);
 
 			// Find sibling Sources directory and include the swift files in build
-			const parentDir = path.dirname(this._filePath);
 			const allFiles = readdirSyncRecursive(parentDir)
-				.map(file => subtractParentPath(parentDir, file));
+				.map(file => subtractParentPath(parentDir, file))
+				.filter(file => !!file) as string[]; // Remove nulls;
 
 			// Match Sources files from all files in bundle. Not using a regex because of differences in path separators between systems
-			const sources = (allFiles.filter(file => !!file) as string[]) // Remove nulls
+			const sources = allFiles
 				.filter(file => {
 					return file.split(path.sep)[0] === "Sources";
 				}).filter(file => path.extname(file) === ".swift")
 				.map(file => path.join(parentDir, file))
 				.join(" ");
+
+			// Copy Resources files into build folder
+			const resources = allFiles
+				.filter(file => {
+					return file.split(path.sep)[0] === "Resources";
+				});
+			resources.forEach(file => {
+				const fileWithoutResources = file.split(path.sep).slice(1); // File name without Resources folder
+				fs.copyFileSync(path.join(parentDir, file), path.join(this._scratchPath, ...fileWithoutResources));
+			});
 
 			const q = quoteString;
 			const executable = path.join(this._scratchPath, 'main');
@@ -79,6 +92,7 @@ export default class Playground {
 	-Xfrontend -debugger-support \
 	-Xfrontend -playground \
 	-module-name Playground \
+	-working-directory ${parentDir} \
 	${flags} \
 	-o ${q(executable)} \
 	${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
