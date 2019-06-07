@@ -194,7 +194,7 @@ export class Line {
 
 	decoration(): vscode.DecorationOptions {
 		return {
-			// hoverMessage: "Swift Playground output",
+			hoverMessage: this.extendedStringRepresentation,
 			range: new vscode.Range(this.index, 0, this.index, 0),
 			renderOptions: {
 				after: {
