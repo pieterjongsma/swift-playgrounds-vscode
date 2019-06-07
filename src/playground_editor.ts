@@ -42,16 +42,19 @@ export default class PlaygroundEditor {
 				console.log(json);
 				this.handlePlaygroundOutput(json as unknown as LogRecord);
 			},
-			(error) => {
-				this.appendToOutput(error);
-			},
 			(stdout) => {
 				this.appendToOutput(stdout.toString());
 			},
 			(stderr) => {
 				this.appendToOutput(stderr);
 			}
-		);
+		)
+		.then(() => {
+			console.log("Playground exited");
+		})
+		.catch((error: any) => {
+			console.error("Playground failed to execute", error);
+		});
     }
 
 	handlePlaygroundOutput(json: LogRecord) {
@@ -157,14 +160,20 @@ export class Line {
 	}
 
 	get extendedStringRepresentation(): string {
+		const clean = (string: string): string => {
+			return string
+				.replace(/(\r\n|\n|\r)/gm, "") // Remove linebreaks
+				.replace(/\s{2,}/g, ' '); // Remove extraneous whitespace
+		};
+
 		return this.records.map(record => {
 			if (record.name && record.object) {
-				return record.object;
+				return clean(record.object);
 				// return `${record.name}: ${record.object}`;
 			} else if (record.name) {
 				return record.name;
 			} else if (record.object) {
-				return record.object;
+				return clean(record.object);
 			} else {
 				return null;
 			}
