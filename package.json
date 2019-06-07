@@ -4,6 +4,9 @@
 	"description": "Allows opening and running of Swift playground bundles.",
 	"publisher": "pieterjongsma",
 	"version": "0.0.2",
+	"icon": "./media/icon.png",
+	"preview": true,
+	"license": "GPL-3.0",
 	"repository": {
 		"type": "github",
 		"url": "https://github.com/pieterjongsma/swift-playgrounds-vscode"
@@ -35,7 +38,12 @@
 		"commands": [
 			{
 				"command": "swiftplayground.start",
-				"title": "Run Swift Playground"
+				"title": "Run Playground",
+				"group": "navigation",
+				"icon": {
+					"light": "./media/toolbar_icon_light.svg",
+					"dark": "./media/toolbar_icon_dark.svg"
+				}
 			}
 		],
 		"menus": {
