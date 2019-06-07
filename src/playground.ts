@@ -62,6 +62,8 @@ export default class Playground {
 		const parentDir = path.dirname(this._filePath);
 		const allFiles = readdirSyncRecursive(parentDir)
 			.map(file => subtractParentPath(parentDir, file));
+
+		// Match Sources files from all files in bundle. Not using a regex because of differences in path separators between systems
 		const sources = (allFiles.filter(file => !!file) as string[]) // Remove nulls
 			.filter(file => {
 				return file.split(path.sep)[0] === "Sources";
@@ -93,9 +95,10 @@ ${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFold
 			}
 
 			console.debug("Executing run", runCmd);
+			// `child.stdio` is misspecified in Typescript as a tuple of fixed length, so we cast `child` to any
 			const child = cp.spawn(runCmd, [], { shell: true, stdio: [null, 'pipe', 'pipe', 'pipe'] }) as any;
 
-			const fd = child.stdio[3]; // `.stdio` is misspecified as a tuple of fixed length
+			const fd = child.stdio[3];
 			if (!fd) { return; }
 
 			if (stdoutCallback) { child.stdout.on('data', stdoutCallback); }
@@ -105,10 +108,7 @@ ${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFold
 			child.on('close', (code: any) => {
 			});
 
-			child.on('error', (error: any) => {
-				errorCallback(error);
-				// FIXME: Bubble error up to caller
-			});
+			child.on('error', errorCallback);
 		});
 	}
 }
