@@ -54,60 +54,74 @@ export default class Playground {
 		this._scratchPath = scratchPath;
 	}
 
-	public run(callback: (json: JSON) => void, errorCallback: (error: any) => void, stdoutCallback?: (output: string) => void, stderrCallback?: (output: string) => void) {
-		const mainFilePath = path.join(this._scratchPath, 'main.swift');
-		fs.copyFileSync(this._filePath, mainFilePath);
+	public run(callback: (json: JSON) => void, stdoutCallback?: (output: string) => void, stderrCallback?: (output: string) => void): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const mainFilePath = path.join(this._scratchPath, 'main.swift');
+			fs.copyFileSync(this._filePath, mainFilePath);
 
-		// Find sibling Sources directory and include the swift files in build
-		const parentDir = path.dirname(this._filePath);
-		const allFiles = readdirSyncRecursive(parentDir)
-			.map(file => subtractParentPath(parentDir, file));
-		const sources = (allFiles.filter(file => !!file) as string[]) // Remove nulls
-			.filter(file => {
-				return file.split(path.sep)[0] === "Sources";
-			}).filter(file => path.extname(file) === ".swift")
-			.map(file => path.join(parentDir, file))
-			.join(" ");
+			// Find sibling Sources directory and include the swift files in build
+			const parentDir = path.dirname(this._filePath);
+			const allFiles = readdirSyncRecursive(parentDir)
+				.map(file => subtractParentPath(parentDir, file));
 
-		const q = quoteString;
-		const executable = path.join(this._scratchPath, 'main');
-		const flags = '';
-		const compileCmd = `swiftc \
--Xfrontend -debugger-support \
--Xfrontend -playground \
--module-name Playground \
-${flags} \
--o ${q(executable)} \
-${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
-		const runCmd = `${q(executable)}`;
+			// Match Sources files from all files in bundle. Not using a regex because of differences in path separators between systems
+			const sources = (allFiles.filter(file => !!file) as string[]) // Remove nulls
+				.filter(file => {
+					return file.split(path.sep)[0] === "Sources";
+				}).filter(file => path.extname(file) === ".swift")
+				.map(file => path.join(parentDir, file))
+				.join(" ");
 
-		console.debug("Executing compile", compileCmd);
-		cp.exec(compileCmd, (err, stdout, stderr) => {
-			console.debug(err, stdout, stderr);
+			const q = quoteString;
+			const executable = path.join(this._scratchPath, 'main');
+			const flags = '';
+			const compileCmd = `swiftc \
+	-Xfrontend -debugger-support \
+	-Xfrontend -playground \
+	-module-name Playground \
+	${flags} \
+	-o ${q(executable)} \
+	${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
+			const runCmd = `${q(executable)}`;
 
-			if (stdout && stdoutCallback) { stdoutCallback(stdout); }
-			if (stderr && stderrCallback) { stderrCallback(stderr); }
-			if (err) {
-				errorCallback(err);
-				return;
-			}
+			console.debug("Executing compile", compileCmd);
+			cp.exec(compileCmd, (err, stdout, stderr) => {
+				console.debug(err, stdout, stderr);
 
-			console.debug("Executing run", runCmd);
-			const child = cp.spawn(runCmd, [], { shell: true, stdio: [null, 'pipe', 'pipe', 'pipe'] }) as any;
+				if (stdout && stdoutCallback) { stdoutCallback(stdout); }
+				if (stderr && stderrCallback) { stderrCallback(stderr); }
+				if (err) {
+					reject(err);
+					return;
+				}
 
-			const fd = child.stdio[3]; // `.stdio` is misspecified as a tuple of fixed length
-			if (!fd) { return; }
+				console.debug("Executing run", runCmd);
+				// `child.stdio` is misspecified in Typescript as a tuple of fixed length, so we cast `child` to any
+				const child = cp.spawn(runCmd, [], { shell: true, stdio: [null, 'pipe', 'pipe', 'pipe'] }) as any;
 
-			if (stdoutCallback) { child.stdout.on('data', stdoutCallback); }
-			if (stderrCallback) { child.stderr.on('data', stderrCallback); }
-			fd.pipe(ndjson.parse()).on('data', callback);
+				const fd = child.stdio[3];
+				if (!fd) { return; }
 
-			child.on('close', (code: any) => {
-			});
+				if (stdoutCallback) { child.stdout.on('data', stdoutCallback); }
+				if (stderrCallback) { child.stderr.on('data', stderrCallback); }
+				fd.pipe(ndjson.parse()).on('data', callback);
 
-			child.on('error', (error: any) => {
-				errorCallback(error);
-				// FIXME: Bubble error up to caller
+				child.on('close', (code: number, signal: string) => {
+					// This event is not handled. See 'exit' instead
+				});
+
+				child.on('disconnect', () => {
+					console.log("Received disconnect event. Should not occur.");
+				});
+
+				child.on('error', (err: Error) => {
+					reject(err);
+				});
+
+				child.on('exit', (code: number, signal: string) => {
+					if (code) { reject(); }
+					else { resolve(); }
+				});
 			});
 		});
 	}
