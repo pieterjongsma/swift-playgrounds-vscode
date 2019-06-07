@@ -89,13 +89,13 @@ export default class Playground {
 			const executable = path.join(this._scratchPath, 'main');
 			const flags = '';
 			const compileCmd = `swiftc \
-	-Xfrontend -debugger-support \
-	-Xfrontend -playground \
-	-module-name Playground \
-	-working-directory ${parentDir} \
-	${flags} \
-	-o ${q(executable)} \
-	${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
+-Xfrontend -debugger-support \
+-Xfrontend -playground \
+-module-name Playground \
+-working-directory ${parentDir} \
+${flags} \
+-o ${q(executable)} \
+${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
 			const runCmd = `${q(executable)}`;
 
 			console.debug("Executing compile", compileCmd);
