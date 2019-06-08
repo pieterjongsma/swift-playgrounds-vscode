@@ -99,10 +99,5 @@ func __builtin_send_data(_ object: AnyObject?) {
 
     let lineBreak = "\n".data(using: .utf8)!
     handle.write(lineBreak)
-    // handle.closeFile()
-
-    // if let jsonString = String(data: data, encoding: .utf8) {
-    //   print(jsonString)
-    // }
   }
 }
