@@ -64,6 +64,7 @@ export default class Playground {
 
 			// Find sibling Sources directory and include the swift files in build
 			const allFiles = readdirSyncRecursive(parentDir)
+				.filter(file => fs.statSync(file).isFile()) // Filter out directories
 				.map(file => subtractParentPath(parentDir, file))
 				.filter(file => !!file) as string[]; // Remove nulls;
 
