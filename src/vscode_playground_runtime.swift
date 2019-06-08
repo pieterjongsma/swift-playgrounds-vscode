@@ -1,6 +1,13 @@
 
 import Foundation
 
+// Import `stdout`, so we can disable output buffering
+#if os(Linux)
+  import Glibc
+#else
+  import Darwin.C
+#end
+
 typealias JSON = [String: Any?]
 
 struct SourceRange {
@@ -70,9 +77,12 @@ func __builtin_log_scope_exit(_ sl: Int, _ el: Int, _ sc: Int, _ ec: Int) -> Any
 
 func __builtin_postPrint(_ sl: Int, _ el: Int, _ sc: Int, _ ec: Int) -> AnyObject? {
   // Prevent stdout from being buffered until the end of execution
-  // FIXME: This is probably not the best place to put this
-  setbuf(__stdoutp, nil)
-  setbuf(__stderrp, nil)
+  #if stdout
+    fflush(stdout)
+  #endif
+  #if stderr
+    fflush(stderr)
+  #endif
   
   return LogRecord(api:"builtin_postPrint", range: SourceRange(sl:sl, el:el, sc:sc, ec:ec))
 }
