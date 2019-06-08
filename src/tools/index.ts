@@ -24,7 +24,11 @@ function runPlayground(file: string) {
 
     playground.run(json => {
         console.log(json);
-    }, error => {
-        console.error(error);
+    })
+    .then(() => {
+        console.log("Playground executed succesfully");
+    })
+    .catch((err: any) => {
+        console.error("Playground failed to execute", err);
     });
 }

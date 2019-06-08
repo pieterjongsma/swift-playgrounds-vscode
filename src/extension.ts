@@ -13,6 +13,15 @@ function runPlayground(context: vscode.ExtensionContext, editor: vscode.TextEdit
 
 
 export function activate(context: vscode.ExtensionContext) {
+	context.subscriptions.push(vscode.commands.registerCommand('swiftplayground.start', () => {
+		const lastEditor = vscode.window.activeTextEditor;
+		if (!lastEditor) {
+			return; // FIXME: Raise error
+		}
+
+		runPlayground(context, lastEditor);
+	}));
+
 	vscode.workspace.onDidSaveTextDocument(document => {
 		const editor = playgroundEditors.get(document.uri);
 		if (editor) {
@@ -23,18 +32,6 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.workspace.onDidChangeTextDocument(event => {
 		// FIXME: Should respond to changes
 	});
-
-	context.subscriptions.push(vscode.commands.registerCommand('swiftplayground.start', () => {
-		const lastEditor = vscode.window.activeTextEditor;
-		if (!lastEditor) {
-			return; // FIXME: Raise error
-		}
-
-		runPlayground(context, lastEditor);
-	}));
-
-	// FIXME: During debug, activate immediately
-	// vscode.commands.executeCommand("swiftplayground.start");
 }
 
 export function deactivate() {

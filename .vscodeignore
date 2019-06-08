@@ -11,7 +11,5 @@ vsc-extension-quickstart.md
 
 .vscode
 node_modules
-build/
-src/
 tsconfig.json
 webpack.config.js
