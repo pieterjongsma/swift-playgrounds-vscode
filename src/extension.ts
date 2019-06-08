@@ -23,6 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}));
 
 	vscode.workspace.onDidSaveTextDocument(document => {
+		console.log("Document saved", event);
 		const editor = playgroundEditors.get(document.uri);
 		if (editor) {
 			editor.run();
@@ -30,7 +31,12 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	vscode.workspace.onDidChangeTextDocument(event => {
+		console.log("Document changed", event);
 		// FIXME: Should respond to changes
+	});
+
+	vscode.workspace.onDidCloseTextDocument(event => {
+		console.log("Document closed");
 	});
 }
 
