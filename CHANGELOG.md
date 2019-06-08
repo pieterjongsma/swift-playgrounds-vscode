@@ -1,8 +1,18 @@
 # Change Log
 
-## [0.0.3] - TBD
+## [0.0.5] - TBD
+
+- Bugfix for Linux users
+
+## [0.0.4] - 2019-06-08
+
+- Support for Resources folder
+- Bugfixes
+
+## [0.0.3] - 2019-06-07
 
 - Added icons and updated README
+- Better Marketplace appearance
 
 ## [0.0.2] - 2019-06-02
 
