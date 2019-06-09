@@ -1,6 +1,6 @@
 
 import * as path from 'path';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as cp from 'child_process';
 import * as ndjson from 'ndjson';
 import { MD5 } from 'crypto-js';
@@ -14,6 +14,14 @@ function readdirSyncRecursive(p: string, a: string[] = []): string[] {
 	}
 	return a;
 }
+
+
+function ensureDirectory(path: string) {
+	if (!fs.existsSync(path)) {
+		fs.mkdirSync(path);
+	}
+}
+
 
 function subtractParentPath(parentPath: string, aPath: string): string | null {
 	const pComps = parentPath.split(path.sep);
@@ -39,12 +47,14 @@ function quoteString(string: string): string {
 export default class Playground {
 
 	private readonly _filePath: string;
+	private readonly _bundleDir: string;
 	private readonly _extensionPath: string;
 	private readonly _buildFolder: string = "build";
 	private readonly _scratchPath: string; // Path to store temporary files
 
 	constructor(filePath: string, extensionPath: string, storagePath: string) {
 		this._filePath = filePath;
+		this._bundleDir = path.dirname(this._filePath);
 		this._extensionPath = extensionPath;
 
 		const scratchPath = path.join(storagePath, `swift-playground-${MD5(this._filePath).toString()}`);
@@ -54,47 +64,91 @@ export default class Playground {
 		this._scratchPath = scratchPath;
 	}
 
+	public get allPaths(): string[] {
+		return readdirSyncRecursive(this._bundleDir)
+			.map(file => subtractParentPath(this._bundleDir, file))
+			.filter(file => !!file) as string[]; // Remove nulls
+	}
+
+	public get allFiles(): string[] {
+		return readdirSyncRecursive(this._bundleDir)
+			.filter(file => fs.statSync(file).isFile()) // Filter out directories
+			.map(file => subtractParentPath(this._bundleDir, file))
+			.filter(file => !!file) as string[]; // Remove nulls
+	}
+
+	public get sourcesFiles(): string[] {
+		// Not using a regex because of differences in path separators between systems
+		return this.allFiles
+			.filter(file => {
+				return file.split(path.sep)[0] === "Sources";
+			})
+			.filter(file => path.extname(file) === ".swift");
+	}
+
+	public get resourcesFiles(): string[] {
+		return this.allFiles
+			.filter(file => {
+				return file.split(path.sep)[0] === "Resources";
+			});
+	}
+
+	public get dependencyFiles(): string[] {
+		return this.allPaths
+			.filter(file => {
+				return file.split(path.sep)[0] === "Dependencies";
+			});
+	}
+
+	public get frameworkFiles(): string[] {
+		return this.dependencyFiles
+			.filter(file => path.extname(file) === ".framework");
+	}
+
 	public run(callback: (json: JSON) => void, stdoutCallback?: (output: string) => void, stderrCallback?: (output: string) => void): Promise<void> {
 		return new Promise((resolve, reject) => {
-			const parentDir = path.dirname(this._filePath);
+			const fullPath = (file: string) => path.join(this._bundleDir, file);
+			const q = quoteString;
 
 			// `swiftc` allows top-level expressions only when the file is called 'main.swift'
 			const mainFilePath = path.join(this._scratchPath, 'main.swift');
 			fs.copyFileSync(this._filePath, mainFilePath);
 
 			// Find sibling Sources directory and include the swift files in build
-			const allFiles = readdirSyncRecursive(parentDir)
-				.filter(file => fs.statSync(file).isFile()) // Filter out directories
-				.map(file => subtractParentPath(parentDir, file))
-				.filter(file => !!file) as string[]; // Remove nulls;
-
-			// Match Sources files from all files in bundle. Not using a regex because of differences in path separators between systems
-			const sources = allFiles
-				.filter(file => {
-					return file.split(path.sep)[0] === "Sources";
-				}).filter(file => path.extname(file) === ".swift")
-				.map(file => path.join(parentDir, file))
-				.join(" ");
+			const sources = this.sourcesFiles.map(fullPath).join(" ");
 
 			// Copy Resources files into build folder
-			const resources = allFiles
-				.filter(file => {
-					return file.split(path.sep)[0] === "Resources";
-				});
-			resources.forEach(file => {
-				const fileWithoutResources = file.split(path.sep).slice(1); // File name without Resources folder
-				fs.copyFileSync(path.join(parentDir, file), path.join(this._scratchPath, ...fileWithoutResources));
+			this.resourcesFiles.forEach(file => {
+				const fileWithoutDir = file.split(path.sep).slice(1); // File name without Resources folder
+				fs.copyFileSync(fullPath(file), path.join(this._scratchPath, ...fileWithoutDir));
 			});
 
-			const q = quoteString;
+			// Copy frameworks ...
+			const scratchFrameworkDirectory = path.join(this._scratchPath, "Dependencies");
+			ensureDirectory(scratchFrameworkDirectory);
+			this.frameworkFiles.forEach(file => {
+				const fileWithoutDir = file.split(path.sep).slice(1); // File name without Resources folder
+				fs.copySync(fullPath(file), path.join(scratchFrameworkDirectory, ...fileWithoutDir));
+			});
+			const frameworks = `-F ${q(scratchFrameworkDirectory)} ` + 
+				this.frameworkFiles
+				.map(frameworkPath => path.basename(frameworkPath, ".framework"))
+				.map(framework => `-framework ${q(framework)}`)
+				.join(' ');
+			// ... and link them
+			const linkerOptions = ['-rpath', q(scratchFrameworkDirectory)];
+			const linker = linkerOptions.map(option => `-Xlinker ${option}`).join(' ');
+
 			const executable = path.join(this._scratchPath, 'main');
 			const flags = '';
 			const compileCmd = `swiftc \
 -Xfrontend -debugger-support \
 -Xfrontend -playground \
 -module-name Playground \
--working-directory ${parentDir} \
+-working-directory ${this._bundleDir} \
 ${flags} \
+${frameworks} \
+${linker} \
 -o ${q(executable)} \
 ${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
 			const runCmd = `${q(executable)}`;

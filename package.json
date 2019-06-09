@@ -77,6 +77,7 @@
 	},
 	"devDependencies": {
 		"@types/crypto-js": "^3.1.43",
+		"@types/fs-extra": "7.0.0",
 		"@types/mathjs": "^5.0.1",
 		"@types/mocha": "^2.2.42",
 		"@types/node": "^10.12.21",
@@ -91,6 +92,7 @@
 	"dependencies": {
 		"commander": "^2.20.0",
 		"crypto-js": "^3.1.9-1",
+		"fs-extra": "8.0.1",
 		"mathjs": "^5.9.0",
 		"ndjson": "1.5.0",
 		"preact": "^8.4.2",
