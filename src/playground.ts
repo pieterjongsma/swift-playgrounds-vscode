@@ -89,11 +89,9 @@ export default class Playground {
 			const q = quoteString;
 			const executable = path.join(this._scratchPath, 'main');
 			const flags = '';
-			const compileCmd = `swiftc \
+			const compileCmd = `swift build \
 -Xfrontend -debugger-support \
 -Xfrontend -playground \
--module-name Playground \
--working-directory ${parentDir} \
 ${flags} \
 -o ${q(executable)} \
 ${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
