@@ -39,7 +39,7 @@ export default class Playground {
 	private readonly _scratchPath: string; // Path to store temporary files
 
 	constructor(filePath: string, extensionPath: string, storagePath: string) {
-		this._filePath = filePath;
+		this._filePath = filePath + path.sep + "Contents.swift";
 		this._extensionPath = extensionPath;
 
 		const scratchPath = path.join(storagePath, `swift-playground-${MD5(this._filePath).toString()}`);

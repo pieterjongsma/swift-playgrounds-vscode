@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
+import * as path from 'path';
 import * as fs from 'fs';
 import * as math from 'mathjs';
 
@@ -100,7 +101,8 @@ export default class PlaygroundEditor {
 		if (!fs.existsSync(storagePath)) {
 			fs.mkdirSync(storagePath);
 		}
-		const playground = new Playground(editor.document.fileName, context.extensionPath, storagePath);
+		const playgroundFolder = path.dirname(editor.document.fileName);
+		const playground = new Playground(playgroundFolder, context.extensionPath, storagePath);
 		return playground;
     }
 
