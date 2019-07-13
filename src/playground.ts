@@ -7,13 +7,8 @@ import { MD5 } from 'crypto-js';
 
 import * as playgroundRuntime from './vscode_playground_runtime.swift';
 
+import { readdirSyncRecursive } from 'helpers';
 
-function readdirSyncRecursive(p: string, a: string[] = []): string[] {
-	if (fs.statSync(p).isDirectory()) {
-		fs.readdirSync(p).map(f => readdirSyncRecursive(a[a.push(path.join(p, f)) - 1], a));
-	}
-	return a;
-}
 
 function subtractParentPath(parentPath: string, aPath: string): string | null {
 	const pComps = parentPath.split(path.sep);
@@ -89,7 +84,7 @@ export default class Playground {
 			const q = quoteString;
 			const executable = path.join(this._scratchPath, 'main');
 			const flags = '';
-			const compileCmd = `swift build \
+			const compileCmd = `swiftc \
 -Xfrontend -debugger-support \
 -Xfrontend -playground \
 ${flags} \
