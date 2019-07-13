@@ -7,8 +7,7 @@ To ensure code changes don't unintentionally change the output of running a Play
 
 You can run the tests as such
 
-    npm run watch
-    mocha --watch build/test_extension.js
+    node ./build/test_extension.js test "src/test/playgrounds/examples/**/*.playground"
 
 It can take a while to run all the tests.
 
@@ -18,4 +17,4 @@ In some cases, a change in Playground output is desired. To do this, we simply n
 
 To help in updating the output files there is a special command that, instead of comparing Playground output with stored expectations, overwrites the expectation files. The same command can be used to generate expecation files for new example Playgrounds.
 
-    ...
+    node ./build/test_extension.js overwrite "src/test/playgrounds/examples/**/*.playground"
