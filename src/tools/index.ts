@@ -18,7 +18,6 @@ function runPlayground(file: string) {
     console.log(`Building Playground ${file}`);
     const playground = new Playground(
         file,
-        path.join(__dirname, ".."), // FIXME: This is not what I expect (extension path)
         os.tmpdir()
         );
 

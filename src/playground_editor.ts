@@ -102,7 +102,7 @@ export default class PlaygroundEditor {
 			fs.mkdirSync(storagePath);
 		}
 		const playgroundFolder = path.dirname(editor.document.fileName);
-		const playground = new Playground(playgroundFolder, context.extensionPath, storagePath);
+		const playground = new Playground(playgroundFolder, storagePath);
 		return playground;
     }
 

@@ -4,10 +4,13 @@ import * as fs from 'fs';
 import * as cp from 'child_process';
 import * as ndjson from 'ndjson';
 import { MD5 } from 'crypto-js';
+import * as rimraf from 'rimraf';
 
-import * as playgroundRuntime from './vscode_playground_runtime.swift';
+import { copyDirectory, copyMissingFiles, copyIfMissing } from 'helpers';
 
-import { readdirSyncRecursive } from 'helpers';
+
+export class PlaygroundInitializationError extends Error {
+}
 
 
 function subtractParentPath(parentPath: string, aPath: string): string | null {
@@ -31,16 +34,17 @@ function quoteString(string: string): string {
 	return `"${escapedString}"`;
 }
 
+
 export default class Playground {
 
 	private readonly _filePath: string;
-	private readonly _extensionPath: string;
+	private readonly _templatePath: string;
 	private readonly _buildFolder: string = "build";
 	private readonly _scratchPath: string; // Path to store temporary files
 
-	constructor(filePath: string, extensionPath: string, storagePath: string) {
-		this._filePath = filePath + path.sep + "Contents.swift";
-		this._extensionPath = extensionPath;
+	constructor(filePath: string, storagePath: string) {
+		this._filePath = filePath;
+		this._templatePath = "build/template.playground";
 
 		const scratchPath = path.join(storagePath, `swift-playground-${MD5(this._filePath).toString()}`);
 		if (!fs.existsSync(scratchPath)) {
@@ -53,47 +57,42 @@ export default class Playground {
 		return new Promise((resolve, reject) => {
 			const parentDir = path.dirname(this._filePath);
 
+			console.log("Creating playground", this._scratchPath);
+
+			// Delete any existing directory (recursively)
+			rimraf.sync(this._scratchPath);
+			fs.mkdirSync(this._scratchPath);
+
+			// Copy all playground files to scratch folder
+			// TODO: This is rather inefficient. Find a better way. Maybe links?
+			copyDirectory(this._filePath, this._scratchPath);
+
 			// `swiftc` allows top-level expressions only when the file is called 'main.swift'
-			const mainFilePath = path.join(this._scratchPath, 'main.swift');
-			fs.copyFileSync(this._filePath, mainFilePath);
+			const contentsFilePath = path.join(this._filePath, 'Contents.swift');
+			const mainFilePath = path.join(this._scratchPath, 'Sources/main.swift');
+			if (!copyIfMissing(contentsFilePath, mainFilePath)) {
+				// main.swift exists. It shouldn't
+				throw new PlaygroundInitializationError("main.swift file in Sources is not allowed");
+			}
 
-			// Find sibling Sources directory and include the swift files in build
-			const allFiles = readdirSyncRecursive(parentDir)
-				.filter(file => fs.statSync(file).isFile()) // Filter out directories
-				.map(file => subtractParentPath(parentDir, file))
-				.filter(file => !!file) as string[]; // Remove nulls;
-
-			// Match Sources files from all files in bundle. Not using a regex because of differences in path separators between systems
-			const sources = allFiles
-				.filter(file => {
-					return file.split(path.sep)[0] === "Sources";
-				}).filter(file => path.extname(file) === ".swift")
-				.map(file => path.join(parentDir, file))
-				.join(" ");
-
-			// Copy Resources files into build folder
-			const resources = allFiles
-				.filter(file => {
-					return file.split(path.sep)[0] === "Resources";
-				});
-			resources.forEach(file => {
-				const fileWithoutResources = file.split(path.sep).slice(1); // File name without Resources folder
-				fs.copyFileSync(path.join(parentDir, file), path.join(this._scratchPath, ...fileWithoutResources));
-			});
+			// Copy non-existing files in playground from template folder
+			copyMissingFiles(this._templatePath, this._scratchPath);
 
 			const q = quoteString;
 			const executable = path.join(this._scratchPath, 'main');
 			const flags = '';
-			const compileCmd = `swiftc \
--Xfrontend -debugger-support \
--Xfrontend -playground \
-${flags} \
--o ${q(executable)} \
-${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
-			const runCmd = `${q(executable)}`;
+			const compileCmd = `swift build \
+-Xswiftc -Xfrontend -Xswiftc -debugger-support \
+-Xswiftc -Xfrontend -Xswiftc -playground \
+${flags}`;
+
+			// FIXME: Get executable path with `swift build --show-bin-path`
+			const runCmd = ".build/debug/Playground";
 
 			console.debug("Executing compile", compileCmd);
-			cp.exec(compileCmd, (err, stdout, stderr) => {
+			cp.exec(compileCmd, {
+				cwd: this._scratchPath
+			}, (err, stdout, stderr) => {
 				console.debug(err, stdout, stderr);
 
 				if (stdout && stdoutCallback) { stdoutCallback(stdout); }
@@ -105,7 +104,7 @@ ${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFold
 
 				console.debug("Executing run", runCmd);
 				// `child.stdio` is misspecified in Typescript as a tuple of fixed length, so we cast `child` to any
-				const child = cp.spawn(runCmd, [], { shell: true, stdio: [null, 'pipe', 'pipe', 'pipe'] }) as any;
+				const child = cp.spawn(runCmd, [], { cwd: this._scratchPath, shell: true, stdio: [null, 'pipe', 'pipe', 'pipe'] }) as any;
 
 				const fd = child.stdio[3];
 				if (!fd) { return; }

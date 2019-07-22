@@ -7,6 +7,7 @@ To ensure code changes don't unintentionally change the output of running a Play
 
 You can run the tests as such
 
+    npm run webpack
     node ./build/test_extension.js test "src/test/playgrounds/examples/**/*.playground"
 
 It can take a while to run all the tests.

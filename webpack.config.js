@@ -2,6 +2,7 @@
 
 const path = require('path');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
 /**@type {import('webpack').Configuration}*/
 const extensionConfig = {
@@ -27,8 +28,15 @@ const extensionConfig = {
   },
   resolve: {
     extensions: ['.ts', '.js', '.tsx', '.jsx'],
-    plugins: [new TsconfigPathsPlugin({})]
+    plugins: [
+      new TsconfigPathsPlugin({})
+    ]
   },
+  plugins: [
+    new CopyPlugin([
+      { from: 'template.playground/**/*', to: '', context: 'src' }
+    ])
+  ],
   module: {
     rules: [
       {

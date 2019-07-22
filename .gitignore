@@ -2,3 +2,6 @@ build
 node_modules
 .vscode-test/
 *.vsix
+
+# Swift Package Manager
+.build

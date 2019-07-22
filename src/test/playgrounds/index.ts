@@ -45,7 +45,7 @@ function pathSiblingReplacingExtension(currentPath: string, extension: string): 
 
 async function playgroundOutput(playgroundFile: string): Promise<JSON[]> {
     var buffer: JSON[] = [];
-    const playground = new Playground(playgroundFile, '.', os.tmpdir());
+    const playground = new Playground(playgroundFile, os.tmpdir());
     await playground.run((json: JSON) => {
         buffer.push(json);
     });
