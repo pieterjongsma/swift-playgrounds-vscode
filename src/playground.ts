@@ -13,22 +13,6 @@ export class PlaygroundInitializationError extends Error {
 }
 
 
-function subtractParentPath(parentPath: string, aPath: string): string | null {
-	const pComps = parentPath.split(path.sep);
-	const comps = aPath.split(path.sep);
-	while (true) {
-		const pComp = pComps.shift();
-		if (pComp === undefined) { break; }
-
-		const comp = comps.shift();
-		if (comp !== pComp) {
-			return null;
-		}
-	}
-	return path.join(...comps);
-}
-
-
 function quoteString(string: string): string {
 	const escapedString = string.replace('"', '\\"');
 	return `"${escapedString}"`;
@@ -55,13 +39,14 @@ export default class Playground {
 
 	public run(callback: (json: JSON) => void, stdoutCallback?: (output: string) => void, stderrCallback?: (output: string) => void): Promise<void> {
 		return new Promise((resolve, reject) => {
-			const parentDir = path.dirname(this._filePath);
-
 			console.log("Creating playground", this._scratchPath);
 
 			// Delete any existing directory (recursively)
 			rimraf.sync(this._scratchPath);
-			fs.mkdirSync(this._scratchPath);
+			// if (!fs.existsSync(this._scratchPath)) {
+				// TODO: Find out why directory sometimes still exists after rimraf. Probably because it is protected for VSCode extensions?
+				fs.mkdirSync(this._scratchPath);
+			// }
 
 			// Copy all playground files to scratch folder
 			// TODO: This is rather inefficient. Find a better way. Maybe links?
@@ -78,8 +63,6 @@ export default class Playground {
 			// Copy non-existing files in playground from template folder
 			copyMissingFiles(this._templatePath, this._scratchPath);
 
-			const q = quoteString;
-			const executable = path.join(this._scratchPath, 'main');
 			const flags = '';
 			const compileCmd = `swift build \
 -Xswiftc -Xfrontend -Xswiftc -debugger-support \

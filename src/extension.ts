@@ -16,7 +16,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('swiftplayground.start', () => {
 		const lastEditor = vscode.window.activeTextEditor;
 		if (!lastEditor) {
-			return; // FIXME: Raise error
+			return; // FIXME: Show warning that editor could not be activated
 		}
 
 		runPlayground(context, lastEditor);
