@@ -9,13 +9,10 @@ import * as rimraf from 'rimraf';
 import { copyDirectory, copyMissingFiles, copyIfMissing } from 'util/file';
 
 
+export const PLAYGROUND_REGEX = new RegExp('.*\.playground');
+
+
 export class PlaygroundInitializationError extends Error {
-}
-
-
-function quoteString(string: string): string {
-	const escapedString = string.replace('"', '\\"');
-	return `"${escapedString}"`;
 }
 
 
@@ -78,7 +75,8 @@ ${flags}`;
 			}, (err, stdout, stderr) => {
 				console.debug(err, stdout, stderr);
 
-				if (stdout && stdoutCallback) { stdoutCallback(stdout); }
+				// (Temporarily) disabled showing swift build stdout output as it is verbose, producing output even when all is good
+				// if (stdout && stdoutCallback) { stdoutCallback(stdout); }
 				if (stderr && stderrCallback) { stderrCallback(stderr); }
 				if (err) {
 					reject(err);
