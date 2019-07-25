@@ -38,12 +38,16 @@
 		"commands": [
 			{
 				"command": "swiftplayground.start",
-				"title": "Run Playground",
+				"title": "Swift Playground: Run",
 				"group": "navigation",
 				"icon": {
 					"light": "./media/toolbar_icon_light.svg",
 					"dark": "./media/toolbar_icon_dark.svg"
 				}
+			},
+			{
+				"command": "swiftplayground.copy.manifest",
+				"title": "Swift Playground: Add Package.swift manifest"
 			}
 		],
 		"menus": {

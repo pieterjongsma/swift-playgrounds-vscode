@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as math from 'mathjs';
 
-import Playground from "playground";
+import Playground, { PLAYGROUND_REGEX } from "playground";
 import { LogRecord, LineIndex } from "models";
 import { parentDirMatching } from 'util/file';
 
@@ -111,7 +111,7 @@ export default class PlaygroundEditor {
 		if (!fs.existsSync(storagePath)) {
 			fs.mkdirSync(storagePath);
 		}
-		const playgroundFolder = parentDirMatching(editor.document.fileName, new RegExp('.*\.playground'));
+		const playgroundFolder = parentDirMatching(editor.document.fileName, PLAYGROUND_REGEX);
 		if (playgroundFolder) {
 			const playground = new Playground(
 				playgroundFolder,
