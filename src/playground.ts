@@ -25,9 +25,9 @@ export default class Playground {
 	private readonly _templatePath: string;
 	private readonly _scratchPath: string; // Path to store temporary files
 
-	constructor(filePath: string, storagePath: string) {
+	constructor(filePath: string, storagePath: string, templatePath: string) {
 		this._filePath = filePath;
-		this._templatePath = "build/template.playground";
+		this._templatePath = templatePath;
 
 		const scratchPath = path.join(storagePath, `swift-playground-${MD5(this._filePath).toString()}`);
 		if (!fs.existsSync(scratchPath)) {

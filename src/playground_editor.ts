@@ -111,9 +111,13 @@ export default class PlaygroundEditor {
 		if (!fs.existsSync(storagePath)) {
 			fs.mkdirSync(storagePath);
 		}
-		const playgroundFolder = parentDirMatching(editor.document.fileName, new RegExp('/*\\.playground/'));
+		const playgroundFolder = parentDirMatching(editor.document.fileName, new RegExp('.*\.playground'));
 		if (playgroundFolder) {
-			const playground = new Playground(playgroundFolder, storagePath);
+			const playground = new Playground(
+				playgroundFolder,
+				storagePath,
+				path.join(context.extensionPath, "build", "template.playground")
+			);
 			return playground;
 		} else {
 			return null;

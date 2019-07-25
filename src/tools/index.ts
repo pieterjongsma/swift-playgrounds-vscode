@@ -18,7 +18,8 @@ function runPlayground(file: string) {
     console.log(`Building Playground ${file}`);
     const playground = new Playground(
         file,
-        os.tmpdir()
+        os.tmpdir(),
+        "build/template.playground"
         );
 
     playground.run(json => {
