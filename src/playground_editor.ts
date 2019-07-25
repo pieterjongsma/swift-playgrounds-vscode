@@ -6,7 +6,7 @@ import * as math from 'mathjs';
 
 import Playground from "playground";
 import { LogRecord, LineIndex } from "models";
-import { parentDirMatching } from 'helpers';
+import { parentDirMatching } from 'util/file';
 
 
 export class NoPlaygroundError extends Error {
@@ -41,8 +41,7 @@ export default class PlaygroundEditor {
 		if (playground) {
 			this.playground = playground;
 		} else {
-			// FIXME: Throw error
-			throw new NoPlaygroundError("File not in .playground folder");
+			throw new NoPlaygroundError("File not in a .playground folder");
 		}
     }
 

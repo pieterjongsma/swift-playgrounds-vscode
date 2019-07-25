@@ -74,7 +74,7 @@
 		"watch": "webpack --mode development --watch",
 		"test-compile": "tsc -p ./",
 		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test_playgrounds": "npm run webpack & node ./build/test_extension.js test src/test/playgrounds/examples/**/*.playground"
+		"test_playgrounds": "npm run webpack && node ./build/test_playgrounds.js test src/test/playgrounds/examples/**/*.playground"
 	},
 	"devDependencies": {
 		"@types/chai": "4.1.7",

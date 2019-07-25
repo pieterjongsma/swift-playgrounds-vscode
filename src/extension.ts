@@ -33,7 +33,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	vscode.workspace.onDidChangeTextDocument(event => {
 		console.log("Document changed", event);
-		// FIXME: Should respond to changes
+		// TODO: Should respond to changes
 	});
 
 	vscode.workspace.onDidCloseTextDocument(event => {

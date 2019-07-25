@@ -3,30 +3,21 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 export function parentDirMatching(file: string, expression: RegExp): (string | null) {
-	// FIXME: Implement this
-	return path.dirname(file);
-}
-
-export function subtractParentPath(parentPath: string, aPath: string): string | null {
-	const pComps = parentPath.split(path.sep);
-	const comps = aPath.split(path.sep);
-	while (true) {
-		const pComp = pComps.shift();
-		if (pComp === undefined) { break; }
-
-		const comp = comps.shift();
-		if (comp !== pComp) {
-			return null;
-		}
+	if (path.basename(file).match(expression)) {
+		return file;
+	} else if (path.basename(file) === file || path.dirname(file) === file) {
+		// Reached the end. No match
+		return null;
+	} else {
+		return parentDirMatching(path.dirname(file), expression);
 	}
-	return path.join(...comps);
 }
 
 export function copyDirectory(sourceDir: string, targetDir: string) {
 	const files = readdirSyncRecursive(sourceDir)
 		.filter(isFile);
 	files.forEach(file => {
-		const targetFile = targetDir + file.slice(sourceDir.length); // FIXME: Use subtract parent path function
+		const targetFile = targetDir + path.relative(sourceDir, file);
 		copyCreatingDirectories(file, targetFile);
 	});
 }
@@ -35,7 +26,7 @@ export function copyMissingFiles(sourceDir: string, targetDir: string) {
 	const files = readdirSyncRecursive(sourceDir)
 		.filter(isFile);
 	files.forEach(file => {
-		const targetFile = targetDir + file.slice(sourceDir.length); // FIXME: Use subtract parent path function
+		const targetFile = targetDir + path.relative(sourceDir, file);
 		copyIfMissing(file, targetFile);
 	});
 }

@@ -10,7 +10,7 @@ const extensionConfig = {
   entry: {
     extension: './src/extension.ts',
     playground: './src/tools',
-    test_extension: './src/test/playgrounds'
+    test_playgrounds: './src/test/playgrounds'
   },
   output: {
     path: path.resolve(__dirname, 'build'),

@@ -6,7 +6,7 @@ import * as ndjson from 'ndjson';
 import { MD5 } from 'crypto-js';
 import * as rimraf from 'rimraf';
 
-import { copyDirectory, copyMissingFiles, copyIfMissing } from 'helpers';
+import { copyDirectory, copyMissingFiles, copyIfMissing } from 'util/file';
 
 
 export class PlaygroundInitializationError extends Error {
@@ -23,7 +23,6 @@ export default class Playground {
 
 	private readonly _filePath: string;
 	private readonly _templatePath: string;
-	private readonly _buildFolder: string = "build";
 	private readonly _scratchPath: string; // Path to store temporary files
 
 	constructor(filePath: string, storagePath: string) {
