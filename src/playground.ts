@@ -69,6 +69,7 @@ export default class Playground {
 ${flags}`;
 
 			// FIXME: Get executable path with `swift build --show-bin-path`
+			// FIXME: Use JSON representation of Package.swift to find executable name
 			const runCmd = ".build/debug/Playground";
 
 			console.debug("Executing compile", compileCmd);

@@ -90,6 +90,6 @@ function printSummary(results: boolean[]) {
     if (errors.length > 0) {
         console.error(chalk.red("Some playgrounds failed. Please see results above."));
     } else {
-        console.log(chalk.green("All playgrounds tested with no unexpected results."))
+        console.log(chalk.green("All playgrounds tested with no unexpected results."));
     }
 }

@@ -17,7 +17,7 @@ export function copyDirectory(sourceDir: string, targetDir: string) {
 	const files = readdirSyncRecursive(sourceDir)
 		.filter(isFile);
 	files.forEach(file => {
-		const targetFile = targetDir + path.relative(sourceDir, file);
+		const targetFile = path.join(targetDir, path.relative(sourceDir, file));
 		copyCreatingDirectories(file, targetFile);
 	});
 }
@@ -26,7 +26,7 @@ export function copyMissingFiles(sourceDir: string, targetDir: string) {
 	const files = readdirSyncRecursive(sourceDir)
 		.filter(isFile);
 	files.forEach(file => {
-		const targetFile = targetDir + path.relative(sourceDir, file);
+		const targetFile = path.join(targetDir, path.relative(sourceDir, file));
 		copyIfMissing(file, targetFile);
 	});
 }
