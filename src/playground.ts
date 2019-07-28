@@ -138,7 +138,7 @@ export default class Playground {
 			const stdoutStream = stdoutCallback ? writableForCallback(stdoutCallback) : undefined;
 			const stderrStream = stderrCallback ? writableForCallback(stderrCallback) : undefined;
 
-			return this.execute(callbackStream, stdoutStream, stderrStream)
+			return this.execute(callbackStream, stdoutStream, stderrStream);
 		});
 	}
 }
