@@ -62,30 +62,6 @@ export default class Playground {
 		copyMissingFiles(this._templatePath, this._scratchPath);
 	}
 
-	getBinPath(stdoutStream?: Writable | undefined, stderrStream?: Writable | undefined): Promise<string> {
-		console.info("GET BIN PATH");
-
-		const buffer = new WritableStreamBuffer();
-
-		const cmd = "swift";
-		const args = [
-			"build",
-			"--show-bin-path"
-		];
-
-		return run(cmd, args, {
-			cwd: this._scratchPath
-		}, [buffer])
-		.then(() => buffer.getContentsAsString())
-		.then(contents => {
-			if (!contents) {
-				throw new PlaygroundInitializationError("Failed to run Playground");
-			}
-			return contents;
-		})
-		.then(contents => contents.trim());
-	}
-
 	public getManifest(stdoutStream?: Writable | undefined, stderrStream?: Writable | undefined): Promise<JSON> {
 		console.info("GET MANIFEST");
 
@@ -138,38 +114,24 @@ export default class Playground {
 	execute(callbackStream: Writable, stdoutStream: Writable | undefined, stderrStream: Writable | undefined): Promise<void> {
 		console.info("EXECUTE");
 
-		return promiseSequence([
-			() => this.getManifest(stdoutStream, stderrStream),
-			() => this.getBinPath(stdoutStream, stderrStream),
-		])
-		.then(([manifest, binPath]) => {
-			if (manifest.package.targets.length !== 1) {
-				throw new PlaygroundManifestError("Playground Package.swift should contain a single target");
-			}
-			const target = manifest.package.targets[0];
-			const runCmd = path.join(binPath, target.name);
+		const cmd = "swift";
+		const args = [
+			"run",
+			"-Xswiftc", "-Xfrontend", "-Xswiftc", "-debugger-support",
+			"-Xswiftc", "-Xfrontend", "-Xswiftc", "-playground"
+		];
 
-			console.log("RUN");
-
-			return run(
-				runCmd,
-				undefined,
-				{
-					cwd: this._scratchPath,
-				},
-				[stdoutStream, stderrStream, callbackStream]
-			);
-		});
+		return run(
+			cmd, args,
+			{
+				cwd: this._scratchPath
+			},
+			[stdoutStream, stderrStream, callbackStream]
+		);
 	}
 
 	public run(callback: (json: JSON) => void, stdoutCallback?: (output: string) => void, stderrCallback?: (output: string) => void): Promise<void> {
 		return this.preparePackage()
-		.then(() => {
-			const stdoutStream = stdoutCallback ? writableForCallback(stdoutCallback) : undefined;
-			const stderrStream = stderrCallback ? writableForCallback(stderrCallback) : undefined;
-
-			return this.compile(stdoutStream, stderrStream);
-		})
 		.then(() => {
 			const callbackStream = ndjson.parse();
 			callbackStream.on('data', callback);
