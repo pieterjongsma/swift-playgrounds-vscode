@@ -13,6 +13,12 @@ export function parentDirMatching(file: string, expression: RegExp): (string | n
 	}
 }
 
+export function pathSiblingReplacingExtension(currentPath: string, extension: string): string {
+    const currentExtension = path.extname(currentPath);
+    const sibling = currentPath.slice(0, -currentExtension.length) + extension;
+    return sibling;
+}
+
 export function copyDirectory(sourceDir: string, targetDir: string) {
 	const files = readdirSyncRecursive(sourceDir)
 		.filter(isFile);

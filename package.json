@@ -88,6 +88,7 @@
 		"@types/mocha": "2.2.48",
 		"@types/node": "^10.12.21",
 		"@types/rimraf": "2.0.2",
+		"@types/stream-buffers": "3.0.3",
 		"chai": "4.2.0",
 		"chalk": "2.4.2",
 		"copy-webpack-plugin": "5.0.3",
@@ -111,6 +112,7 @@
 		"ndjson": "1.5.0",
 		"preact": "^8.4.2",
 		"preact-compat": "^3.18.5",
-		"rimraf": "2.6.3"
+		"rimraf": "2.6.3",
+		"stream-buffers": "3.0.2"
 	}
 }

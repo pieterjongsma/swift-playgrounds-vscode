@@ -1,7 +1,6 @@
 
 import { assert, AssertionError } from 'chai';
 import * as os from 'os';
-import * as path from 'path';
 import * as fs from 'fs';
 import * as program from 'commander';
 import * as glob from 'glob';
@@ -9,26 +8,41 @@ import { promisify } from 'util';
 import chalk from 'chalk';
 
 import Playground from 'playground';
-import { isNull } from 'util';
+import { pathSiblingReplacingExtension } from 'util/file';
+import { promiseSequence } from 'util/child_process';
+
 
 program
-    .version('0.1')
+    .version('0.2.0');
 
+program
     .command("test <pattern>")
     .description("Runs playground tests")
     .action(pattern => {
         const files = glob.sync(pattern);
         console.log(`Found ${files.length} playground files.`);
-        Promise.all(files.map(file => testPlayground(file))).then(results => {
-            printSummary(results);
-        });
-    })
 
+        const tasks = files.map(file => {
+            return () => testPlayground(file).catch(error => {
+                console.error(`Failed to run playground ${file}`);
+                throw error;
+            });
+        });
+
+        promiseSequence(tasks).then(results => {
+            printSummary(results);
+        }).catch(console.error);
+    });
+
+program
     .command("overwrite <pattern>")
     .description("Writes expected output files")
     .action(pattern => {
         const files = glob.sync(pattern);
-        Promise.all(files.map(file => testPlayground(file, true))).then(_ => {
+        const tasks = files.map(file => {
+            return () => testPlayground(file, true);
+        });
+        promiseSequence(tasks).then(_ => {
             console.log("Finished");
         });
     });
@@ -36,18 +50,15 @@ program
 program.parse(process.argv);
 
 
-function pathSiblingReplacingExtension(currentPath: string, extension: string): string {
-    const currentExtension = path.extname(currentPath);
-    const sibling = currentPath.slice(0, -currentExtension.length) + extension;
-    return sibling;
-}
-
-
 async function playgroundOutput(playgroundFile: string): Promise<JSON[]> {
-    var buffer: JSON[] = [];
+    let buffer: JSON[] = [];
     const playground = new Playground(playgroundFile, os.tmpdir(), "build/template.playground");
-    await playground.run((json: JSON) => {
+    await playground.run((json) => {
         buffer.push(json);
+    }, (stdout: string) => {
+        console.log(stdout);
+    }, (stderr: string) => {
+        console.error(stderr);
     });
     return buffer;
 }
