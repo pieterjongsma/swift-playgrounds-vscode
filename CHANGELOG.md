@@ -1,6 +1,10 @@
 # Change Log
 
-## [0.0.5] - TBD
+## [0.1.0] - 2019-08-01
+
+- Swift Package Manager support
+
+## [0.0.5] - 2019-07-08
 
 - Bugfix for Linux users
 
