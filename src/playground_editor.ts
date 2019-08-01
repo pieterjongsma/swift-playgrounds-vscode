@@ -1,10 +1,16 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
+import * as path from 'path';
 import * as fs from 'fs';
 import * as math from 'mathjs';
 
-import Playground from "./playground";
-import { LogRecord, LineIndex } from "./models";
+import Playground, { PLAYGROUND_REGEX } from "playground";
+import { LogRecord, LineIndex } from "models";
+import { parentDirMatching } from 'util/file';
+
+
+export class NoPlaygroundError extends Error {
+}
 
 
 const colorMap = {
@@ -31,7 +37,12 @@ export default class PlaygroundEditor {
         this.outputChannel = vscode.window.createOutputChannel("Swift Playground Output");
         this.decorationType = this.createDecorationType();
 
-        this.playground = this.createPlayground(context, textEditor);
+		const playground = this.createPlayground(context, textEditor);
+		if (playground) {
+			this.playground = playground;
+		} else {
+			throw new NoPlaygroundError("File not in a .playground folder");
+		}
     }
 
     run() {
@@ -95,13 +106,22 @@ export default class PlaygroundEditor {
 		});
     }
 
-    createPlayground(context: vscode.ExtensionContext, editor: vscode.TextEditor): Playground {
+    createPlayground(context: vscode.ExtensionContext, editor: vscode.TextEditor): (Playground | null) {
 		const storagePath = context.storagePath || os.tmpdir();
 		if (!fs.existsSync(storagePath)) {
 			fs.mkdirSync(storagePath);
 		}
-		const playground = new Playground(editor.document.fileName, context.extensionPath, storagePath);
-		return playground;
+		const playgroundFolder = parentDirMatching(editor.document.fileName, PLAYGROUND_REGEX);
+		if (playgroundFolder) {
+			const playground = new Playground(
+				playgroundFolder,
+				storagePath,
+				path.join(context.extensionPath, "build", "template.playground")
+			);
+			return playground;
+		} else {
+			return null;
+		}
     }
 
 }

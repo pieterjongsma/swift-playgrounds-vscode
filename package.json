@@ -3,7 +3,7 @@
 	"displayName": "Swift Playgrounds",
 	"description": "Allows opening and running of Swift playground bundles.",
 	"publisher": "pieterjongsma",
-	"version": "0.0.5",
+	"version": "0.1.0",
 	"icon": "media/icon.png",
 	"preview": true,
 	"license": "GPL-3.0",
@@ -38,12 +38,16 @@
 		"commands": [
 			{
 				"command": "swiftplayground.start",
-				"title": "Run Playground",
+				"title": "Swift Playground: Run",
 				"group": "navigation",
 				"icon": {
 					"light": "./media/toolbar_icon_light.svg",
 					"dark": "./media/toolbar_icon_dark.svg"
 				}
+			},
+			{
+				"command": "swiftplayground.copy.manifest",
+				"title": "Swift Playground: Add Package.swift manifest"
 			}
 		],
 		"menus": {
@@ -73,15 +77,28 @@
 		"webpack": "webpack --mode development",
 		"watch": "webpack --mode development --watch",
 		"test-compile": "tsc -p ./",
-		"postinstall": "node ./node_modules/vscode/bin/install"
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"test_playgrounds": "npm run webpack && node ./build/test_playgrounds.js test src/test/playgrounds/examples/**/*.playground"
 	},
 	"devDependencies": {
+		"@types/chai": "4.1.7",
 		"@types/crypto-js": "^3.1.43",
+		"@types/glob": "7.1.1",
 		"@types/mathjs": "^5.0.1",
-		"@types/mocha": "^2.2.42",
+		"@types/mocha": "2.2.48",
 		"@types/node": "^10.12.21",
+		"@types/rimraf": "2.0.2",
+		"@types/stream-buffers": "3.0.3",
+		"chai": "4.2.0",
+		"chalk": "2.4.2",
+		"copy-webpack-plugin": "5.0.3",
 		"file-loader": "^3.0.1",
+		"glob": "7.1.4",
+		"mocha": "6.1.4",
+		"mocha-webpack": "1.1.0",
 		"ts-loader": "^5.3.3",
+		"ts-node": "8.3.0",
+		"tsconfig-paths-webpack-plugin": "3.2.0",
 		"tslint": "^5.12.1",
 		"typescript": "^3.3.1",
 		"vscode": "^1.1.28",
@@ -94,6 +111,8 @@
 		"mathjs": "^5.9.0",
 		"ndjson": "1.5.0",
 		"preact": "^8.4.2",
-		"preact-compat": "^3.18.5"
+		"preact-compat": "^3.18.5",
+		"rimraf": "2.6.3",
+		"stream-buffers": "3.0.2"
 	}
 }

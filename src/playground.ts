@@ -4,48 +4,33 @@ import * as fs from 'fs';
 import * as cp from 'child_process';
 import * as ndjson from 'ndjson';
 import { MD5 } from 'crypto-js';
+import * as rimraf from 'rimraf';
 
-import * as playgroundRuntime from './vscode_playground_runtime.swift';
+import { copyDirectory, copyMissingFiles, copyIfMissing } from 'util/file';
+import { run, writableForCallback, promiseSequence } from 'util/child_process';
+import { Writable } from 'stream';
+import { WritableStreamBuffer } from 'stream-buffers';
 
 
-function readdirSyncRecursive(p: string, a: string[] = []): string[] {
-	if (fs.statSync(p).isDirectory()) {
-		fs.readdirSync(p).map(f => readdirSyncRecursive(a[a.push(path.join(p, f)) - 1], a));
-	}
-	return a;
+export const PLAYGROUND_REGEX = new RegExp('.*\.playground');
+
+
+export class PlaygroundInitializationError extends Error {
 }
 
-function subtractParentPath(parentPath: string, aPath: string): string | null {
-	const pComps = parentPath.split(path.sep);
-	const comps = aPath.split(path.sep);
-	while (true) {
-		const pComp = pComps.shift();
-		if (pComp === undefined) { break; }
-
-		const comp = comps.shift();
-		if (comp !== pComp) {
-			return null;
-		}
-	}
-	return path.join(...comps);
+export class PlaygroundManifestError extends Error {
 }
 
-
-function quoteString(string: string): string {
-	const escapedString = string.replace('"', '\\"');
-	return `"${escapedString}"`;
-}
 
 export default class Playground {
 
-	private readonly _filePath: string;
-	private readonly _extensionPath: string;
-	private readonly _buildFolder: string = "build";
+	private readonly _filePath: string; // Path to .playground
+	private readonly _templatePath: string; // Path of template .playground with Package.swift etc.
 	private readonly _scratchPath: string; // Path to store temporary files
 
-	constructor(filePath: string, extensionPath: string, storagePath: string) {
+	constructor(filePath: string, storagePath: string, templatePath: string) {
 		this._filePath = filePath;
-		this._extensionPath = extensionPath;
+		this._templatePath = templatePath;
 
 		const scratchPath = path.join(storagePath, `swift-playground-${MD5(this._filePath).toString()}`);
 		if (!fs.existsSync(scratchPath)) {
@@ -54,90 +39,106 @@ export default class Playground {
 		this._scratchPath = scratchPath;
 	}
 
+	public async preparePackage(): Promise<void> {
+		console.log("Preparing at", this._scratchPath);
+
+		// Delete any existing directory (recursively)
+		rimraf.sync(this._scratchPath);
+		fs.mkdirSync(this._scratchPath);
+
+		// Copy all playground files to scratch folder
+		// TODO: This is rather inefficient. Find a better way. Maybe links?
+		copyDirectory(this._filePath, this._scratchPath);
+
+		// `swiftc` allows top-level expressions only when the file is called 'main.swift'
+		const contentsFilePath = path.join(this._filePath, 'Contents.swift');
+		const mainFilePath = path.join(this._scratchPath, 'Sources', 'main.swift');
+		if (!copyIfMissing(contentsFilePath, mainFilePath)) {
+			// main.swift exists. It shouldn't
+			throw new PlaygroundInitializationError("main.swift file in Sources is not allowed");
+		}
+
+		// Copy non-existing files in playground from template folder
+		copyMissingFiles(this._templatePath, this._scratchPath);
+	}
+
+	public getManifest(stdoutStream?: Writable | undefined, stderrStream?: Writable | undefined): Promise<JSON> {
+		console.info("GET MANIFEST");
+
+		const buffer = new WritableStreamBuffer();
+
+		const cmd = "swiftc";
+		const args = [
+			"--driver-mode=swift",
+			"-L", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/4_2",
+			"-lPackageDescription",
+			"-I", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/4_2",
+			"Package.swift",
+			"-fileno", "3",
+		];
+		// const args: string[] = [];
+
+		return run(cmd, args, {
+			cwd: this._scratchPath,
+			shell: true
+		}, [stdoutStream, stderrStream, buffer])
+		.then(() => buffer.getContentsAsString())
+		.then(contents => {
+			if (!contents) {
+				throw new PlaygroundInitializationError("Failed to run Playground");
+			}
+			return contents;
+		})
+		.then(JSON.parse);
+	}
+
+	compile(stdoutStream: Writable | undefined, stderrStream: Writable | undefined): Promise<void> {
+		console.info("COMPILE");
+
+		const cmd = "swift";
+		const args = [
+			"build",
+			"-Xswiftc", "-Xfrontend", "-Xswiftc", "-debugger-support",
+			"-Xswiftc", "-Xfrontend", "-Xswiftc", "-playground"
+		];
+
+		return run(
+			cmd, args,
+			{
+				cwd: this._scratchPath
+			},
+			[stdoutStream, stderrStream]
+		);
+	}
+
+	execute(callbackStream: Writable, stdoutStream: Writable | undefined, stderrStream: Writable | undefined): Promise<void> {
+		console.info("EXECUTE");
+
+		const cmd = "swift";
+		const args = [
+			"run",
+			"-Xswiftc", "-Xfrontend", "-Xswiftc", "-debugger-support",
+			"-Xswiftc", "-Xfrontend", "-Xswiftc", "-playground"
+		];
+
+		return run(
+			cmd, args,
+			{
+				cwd: this._scratchPath
+			},
+			[stdoutStream, stderrStream, callbackStream]
+		);
+	}
+
 	public run(callback: (json: JSON) => void, stdoutCallback?: (output: string) => void, stderrCallback?: (output: string) => void): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const parentDir = path.dirname(this._filePath);
+		return this.preparePackage()
+		.then(() => {
+			const callbackStream = ndjson.parse();
+			callbackStream.on('data', callback);
+			const stdoutStream = stdoutCallback ? writableForCallback(stdoutCallback) : undefined;
+			const stderrStream = stderrCallback ? writableForCallback(stderrCallback) : undefined;
 
-			// `swiftc` allows top-level expressions only when the file is called 'main.swift'
-			const mainFilePath = path.join(this._scratchPath, 'main.swift');
-			fs.copyFileSync(this._filePath, mainFilePath);
-
-			// Find sibling Sources directory and include the swift files in build
-			const allFiles = readdirSyncRecursive(parentDir)
-				.filter(file => fs.statSync(file).isFile()) // Filter out directories
-				.map(file => subtractParentPath(parentDir, file))
-				.filter(file => !!file) as string[]; // Remove nulls;
-
-			// Match Sources files from all files in bundle. Not using a regex because of differences in path separators between systems
-			const sources = allFiles
-				.filter(file => {
-					return file.split(path.sep)[0] === "Sources";
-				}).filter(file => path.extname(file) === ".swift")
-				.map(file => path.join(parentDir, file))
-				.join(" ");
-
-			// Copy Resources files into build folder
-			const resources = allFiles
-				.filter(file => {
-					return file.split(path.sep)[0] === "Resources";
-				});
-			resources.forEach(file => {
-				const fileWithoutResources = file.split(path.sep).slice(1); // File name without Resources folder
-				fs.copyFileSync(path.join(parentDir, file), path.join(this._scratchPath, ...fileWithoutResources));
-			});
-
-			const q = quoteString;
-			const executable = path.join(this._scratchPath, 'main');
-			const flags = '';
-			const compileCmd = `swiftc \
--Xfrontend -debugger-support \
--Xfrontend -playground \
--module-name Playground \
--working-directory ${parentDir} \
-${flags} \
--o ${q(executable)} \
-${q(mainFilePath)} ${sources} ${q(path.join(this._extensionPath, this._buildFolder, playgroundRuntime))}`;
-			const runCmd = `${q(executable)}`;
-
-			console.debug("Executing compile", compileCmd);
-			cp.exec(compileCmd, (err, stdout, stderr) => {
-				console.debug(err, stdout, stderr);
-
-				if (stdout && stdoutCallback) { stdoutCallback(stdout); }
-				if (stderr && stderrCallback) { stderrCallback(stderr); }
-				if (err) {
-					reject(err);
-					return;
-				}
-
-				console.debug("Executing run", runCmd);
-				// `child.stdio` is misspecified in Typescript as a tuple of fixed length, so we cast `child` to any
-				const child = cp.spawn(runCmd, [], { shell: true, stdio: [null, 'pipe', 'pipe', 'pipe'] }) as any;
-
-				const fd = child.stdio[3];
-				if (!fd) { return; }
-
-				if (stdoutCallback) { child.stdout.on('data', stdoutCallback); }
-				if (stderrCallback) { child.stderr.on('data', stderrCallback); }
-				fd.pipe(ndjson.parse()).on('data', callback);
-
-				child.on('close', (code: number, signal: string) => {
-					// This event is not handled. See 'exit' instead
-				});
-
-				child.on('disconnect', () => {
-					console.log("Received disconnect event. Should not occur.");
-				});
-
-				child.on('error', (err: Error) => {
-					reject(err);
-				});
-
-				child.on('exit', (code: number, signal: string) => {
-					if (code) { reject(); }
-					else { resolve(); }
-				});
-			});
+			return this.execute(callbackStream, stdoutStream, stderrStream);
 		});
 	}
 }

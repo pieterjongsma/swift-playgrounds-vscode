@@ -20,12 +20,15 @@
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
+            "env": {
+                "NODE_PATH": "${cwd}/build"
+            },
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/build/test"
+                "--extensionTestsPath=${workspaceFolder}/build/test/extension"
             ],
             "outFiles": [
-                "${workspaceFolder}/build/test/**/*.js"
+                "${workspaceFolder}/build/test/extension/**/*.js"
             ],
             "preLaunchTask": "npm: test-compile"
         }
