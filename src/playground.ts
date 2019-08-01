@@ -6,7 +6,7 @@ import * as ndjson from 'ndjson';
 import { MD5 } from 'crypto-js';
 import * as rimraf from 'rimraf';
 
-import { copyDirectory, copyMissingFiles, copyIfMissing } from 'util/file';
+import { copyDirectory, copyMissingFiles, copyIfMissing, readdirSyncRecursive, isFile, parentDirMatching } from 'util/file';
 import { run, writableForCallback, promiseSequence } from 'util/child_process';
 import { Writable } from 'stream';
 import { WritableStreamBuffer } from 'stream-buffers';
@@ -48,7 +48,14 @@ export default class Playground {
 
 		// Copy all playground files to scratch folder
 		// TODO: This is rather inefficient. Find a better way. Maybe links?
-		copyDirectory(this._filePath, this._scratchPath);
+		const files = readdirSyncRecursive(this._filePath)
+			.filter(isFile)
+			.filter(file => !parentDirMatching(file, new RegExp("^\.build$")))
+			.filter(file => !parentDirMatching(file, new RegExp("^.*\.xcworkspace$")));
+		files.forEach((file: string) => {
+			const targetFile = path.join(this._scratchPath, path.relative(this._filePath, file));
+			copyIfMissing(file, targetFile);
+		});
 
 		// `swiftc` allows top-level expressions only when the file is called 'main.swift'
 		const contentsFilePath = path.join(this._filePath, 'Contents.swift');
