@@ -1,13 +1,12 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import * as cp from 'child_process';
 import * as ndjson from 'ndjson';
 import { MD5 } from 'crypto-js';
 import * as rimraf from 'rimraf';
 
-import { copyDirectory, copyMissingFiles, copyIfMissing } from 'util/file';
-import { run, writableForCallback, promiseSequence } from 'util/child_process';
+import { copyMissingFiles, copyIfMissing, readdirSyncRecursive, isFile, parentDirMatching } from 'util/file';
+import { run, writableForCallback } from 'util/child_process';
 import { Writable } from 'stream';
 import { WritableStreamBuffer } from 'stream-buffers';
 
@@ -40,7 +39,7 @@ export default class Playground {
 	}
 
 	public async preparePackage(): Promise<void> {
-		console.log("Preparing at", this._scratchPath);
+		console.log("Preparing Playground at", this._scratchPath);
 
 		// Delete any existing directory (recursively)
 		rimraf.sync(this._scratchPath);
@@ -48,7 +47,14 @@ export default class Playground {
 
 		// Copy all playground files to scratch folder
 		// TODO: This is rather inefficient. Find a better way. Maybe links?
-		copyDirectory(this._filePath, this._scratchPath);
+		const files = readdirSyncRecursive(this._filePath)
+			.filter(isFile)
+			.filter(file => !parentDirMatching(file, new RegExp("^\.build$")))
+			.filter(file => !parentDirMatching(file, new RegExp("^.*\.xcworkspace$")));
+		files.forEach((file: string) => {
+			const targetFile = path.join(this._scratchPath, path.relative(this._filePath, file));
+			copyIfMissing(file, targetFile);
+		});
 
 		// `swiftc` allows top-level expressions only when the file is called 'main.swift'
 		const contentsFilePath = path.join(this._filePath, 'Contents.swift');
@@ -63,8 +69,6 @@ export default class Playground {
 	}
 
 	public getManifest(stdoutStream?: Writable | undefined, stderrStream?: Writable | undefined): Promise<JSON> {
-		console.info("GET MANIFEST");
-
 		const buffer = new WritableStreamBuffer();
 
 		const cmd = "swiftc";
@@ -93,8 +97,6 @@ export default class Playground {
 	}
 
 	compile(stdoutStream: Writable | undefined, stderrStream: Writable | undefined): Promise<void> {
-		console.info("COMPILE");
-
 		const cmd = "swift";
 		const args = [
 			"build",
@@ -112,8 +114,6 @@ export default class Playground {
 	}
 
 	execute(callbackStream: Writable, stdoutStream: Writable | undefined, stderrStream: Writable | undefined): Promise<void> {
-		console.info("EXECUTE");
-
 		const cmd = "swift";
 		const args = [
 			"run",

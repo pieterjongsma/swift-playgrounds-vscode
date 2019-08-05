@@ -58,7 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	vscode.workspace.onDidChangeTextDocument(event => {
-		console.log("Document changed", event);
+		// console.log("Document changed", event);
 		// TODO: Should respond to changes
 	});
 

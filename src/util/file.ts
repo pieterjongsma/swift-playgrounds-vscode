@@ -57,13 +57,13 @@ export function createDirectoriesForFile(file: string) {
 	}
 }
 
-function readdirSyncRecursive(p: string, a: string[] = []): string[] {
+export function readdirSyncRecursive(p: string, a: string[] = []): string[] {
 	if (fs.statSync(p).isDirectory()) {
 		fs.readdirSync(p).map(f => readdirSyncRecursive(a[a.push(path.join(p, f)) - 1], a));
 	}
 	return a;
 }
 
-function isFile(path: string): boolean {
+export function isFile(path: string): boolean {
 	return !fs.statSync(path).isDirectory();
 }
