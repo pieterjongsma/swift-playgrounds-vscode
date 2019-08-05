@@ -39,7 +39,7 @@ export default class Playground {
 	}
 
 	public async preparePackage(): Promise<void> {
-		console.log("Preparing at", this._scratchPath);
+		console.log("Preparing Playground at", this._scratchPath);
 
 		// Delete any existing directory (recursively)
 		rimraf.sync(this._scratchPath);
@@ -69,8 +69,6 @@ export default class Playground {
 	}
 
 	public getManifest(stdoutStream?: Writable | undefined, stderrStream?: Writable | undefined): Promise<JSON> {
-		console.info("GET MANIFEST");
-
 		const buffer = new WritableStreamBuffer();
 
 		const cmd = "swiftc";
@@ -99,8 +97,6 @@ export default class Playground {
 	}
 
 	compile(stdoutStream: Writable | undefined, stderrStream: Writable | undefined): Promise<void> {
-		console.info("COMPILE");
-
 		const cmd = "swift";
 		const args = [
 			"build",
@@ -118,8 +114,6 @@ export default class Playground {
 	}
 
 	execute(callbackStream: Writable, stdoutStream: Writable | undefined, stderrStream: Writable | undefined): Promise<void> {
-		console.info("EXECUTE");
-
 		const cmd = "swift";
 		const args = [
 			"run",
