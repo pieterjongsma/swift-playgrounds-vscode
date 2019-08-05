@@ -3,7 +3,7 @@
 	"displayName": "Swift Playgrounds",
 	"description": "Allows opening and running of Swift playground bundles.",
 	"publisher": "pieterjongsma",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"icon": "media/icon.png",
 	"preview": true,
 	"license": "GPL-3.0",
