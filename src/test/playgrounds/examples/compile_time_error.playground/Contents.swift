@@ -1,0 +1,4 @@
+
+print("I like 💩")
+
+sayHello()

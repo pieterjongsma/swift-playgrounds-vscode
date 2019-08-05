@@ -1,13 +1,12 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import * as cp from 'child_process';
 import * as ndjson from 'ndjson';
 import { MD5 } from 'crypto-js';
 import * as rimraf from 'rimraf';
 
-import { copyDirectory, copyMissingFiles, copyIfMissing, readdirSyncRecursive, isFile, parentDirMatching } from 'util/file';
-import { run, writableForCallback, promiseSequence } from 'util/child_process';
+import { copyMissingFiles, copyIfMissing, readdirSyncRecursive, isFile, parentDirMatching } from 'util/file';
+import { run, writableForCallback } from 'util/child_process';
 import { Writable } from 'stream';
 import { WritableStreamBuffer } from 'stream-buffers';
 

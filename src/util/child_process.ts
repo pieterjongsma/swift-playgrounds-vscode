@@ -36,7 +36,7 @@ export function writableForCallback(call: (data: string) => void): Writable {
 			} else {
 				throw new ChildProcessNotStringError("Writable was expecting a string");
 			}
-			return true; // Don't wait for callback
+			callback();
 		}
 	});
 }
@@ -51,6 +51,35 @@ export function promiseSequence(tasks: (() => Promise<any>)[]): Promise<any[]> {
             )
         );
     }, Promise.resolve([]));
+}
+
+
+export function simpleRun(
+	command: string,
+	args?: readonly string[] | undefined,
+	options?: cp.ExecOptions | undefined,
+	stdioStreams: (Writable | undefined)[] = []
+	): Promise<void> {
+
+    const commandWithArgs = [command, ...(args || [])].join(' ');
+
+    return new Promise((resolve, reject) => {
+		cp.exec(commandWithArgs, options, (err, stdout, stderr) => {
+			const stdoutStream = stdioStreams[0];
+			const stderrStream = stdioStreams[1];
+			if (stdoutStream) {
+				stdoutStream.write(stdout);
+			}
+			if (stderrStream) {
+				stderrStream.write(stderr);
+			}
+			if (err) {
+				reject(err);
+			} else {
+				resolve();
+			}
+		});
+	});
 }
 
 
@@ -76,19 +105,19 @@ export function run(
 			}
 		});
 
-		child.on('close', (code: number, signal: string) => {
+		child.once('close', (code: number, signal: string) => {
 			// This event is not handled. See 'exit' instead
 		});
 
-		child.on('disconnect', () => {
+		child.once('disconnect', () => {
 			reject(new ChildProcessDisconnectError());
 		});
 
-		child.on('error', (err: Error) => {
+		child.once('error', (err: Error) => {
 			reject(err);
 		});
 
-		child.on('exit', (code: number, signal: string) => {
+		child.once('exit', (code: number, signal: string) => {
 			if (code) { reject(new ChildProcessExitError(code, signal)); }
 			else { resolve(); }
 		});

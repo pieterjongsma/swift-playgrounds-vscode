@@ -1,29 +1,30 @@
 
 import * as os from 'os';
 import * as program from 'commander';
-import { inspect } from 'util';
 
 import Playground from '../playground';
 
 program
-    .version('0.2.0');
-
-program
     .command("run <file>")
     .description("Compiles and runs a Playground")
-    .action(file => {
+    .action(async file => {
         console.log(`Building Playground ${file}`);
         const playground = playgroundForFile(file);
 
-        playground.run(json => {
-            console.log(json);
-        })
-        .then(() => {
+        try {
+            await playground.run(json => {
+                console.log(json);
+            }, (stdout: string) => {
+                console.log(stdout);
+            }, (stderr: string) => {
+                console.error(stderr);
+            });
+
             console.log("Playground executed succesfully");
-        })
-        .catch((err: any) => {
-            console.error("Playground failed to execute", err);
-        });
+        } catch(e) {
+            console.error("Playground failed to execute", e);
+            process.exit(1);
+        }
     });
 
 program
