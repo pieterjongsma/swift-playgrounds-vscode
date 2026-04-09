@@ -28,14 +28,7 @@ export function quoteString(string: string): string {
 export function writableForCallback(call: (data: string) => void): Writable {
 	return new Writable({
 		write(chunk, encoding, callback) {
-			if (encoding) {
-				if (encoding === 'buffer') {
-					encoding = 'utf-8';
-				}
-				call(chunk.toString(encoding));
-			} else {
-				throw new ChildProcessNotStringError("Writable was expecting a string");
-			}
+			call(chunk.toString(encoding || 'utf-8'));
 			callback();
 		}
 	});
@@ -85,7 +78,7 @@ export function simpleRun(
 
 export function run(
 	command: string,
-	args?: readonly string[] | undefined,
+	args: readonly string[] = [],
 	options?: cp.SpawnOptions | undefined,
 	stdioStreams: (Writable | undefined)[] = []
 	): Promise<void> {

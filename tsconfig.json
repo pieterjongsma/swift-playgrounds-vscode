@@ -2,21 +2,17 @@
 	"compilerOptions": {
 		"baseUrl": "src",
 		"module": "commonjs",
-		"target": "es6",
+		"target": "ES2022",
 		"outDir": "build",
 		"lib": [
-			"es6",
+			"ES2022",
 			"dom"
 		],
 		"sourceMap": true,
 		"rootDir": "src",
-		"jsx": "react",
-		"jsxFactory": "h",
-		"strict": true   /* enable all strict type-checking options */
-		/* Additional Checks */
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true
 	},
 	"exclude": [
 		"node_modules",

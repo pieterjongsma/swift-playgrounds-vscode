@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as math from 'mathjs';
 
 import Playground, { PLAYGROUND_REGEX } from "playground";
 import { LogRecord, LineIndex } from "models";
@@ -107,7 +106,7 @@ export default class PlaygroundEditor {
     }
 
     createPlayground(context: vscode.ExtensionContext, editor: vscode.TextEditor): (Playground | null) {
-		const storagePath = context.storagePath || os.tmpdir();
+		const storagePath = context.storageUri?.fsPath || os.tmpdir();
 		if (!fs.existsSync(storagePath)) {
 			fs.mkdirSync(storagePath);
 		}
@@ -131,11 +130,12 @@ export class Line {
     records: LogRecord[] = [];
 
 	static forRecords(records: LogRecord[]): Line[] {
-		let lines: Map<LineIndex, Line> = new Map();
+		const lines: Map<LineIndex, Line> = new Map();
 		records.forEach(record => {
 			// Subtract 1 from 'sl' because it is a line number, not an index
-			const recordLineIndices = math.range(record.range.sl-1, record.range.el);
-			recordLineIndices.forEach(index => {
+			const start = record.range.sl - 1;
+			const end = record.range.el;
+			for (let index = start; index < end; index++) {
 				const line = lines.get(index);
 				if (line) {
 					line.records.push(record);
@@ -144,7 +144,7 @@ export class Line {
 					lines.set(index, newLine);
 					newLine.records.push(record);
 				}
-			});
+			}
 		});
 
 		console.log(records, lines);
@@ -159,14 +159,14 @@ export class Line {
 	get stringRepresentation(): string {
 		const ellipsis = " ...";
 
-		let truncLength: number = math.max(
+		const truncLength: number = Math.max(
 			vscode.workspace
 				.getConfiguration("swift-playgrounds")
 				.get("truncationLength") || 0,
 			ellipsis.length
 		);
-		
-		var representation = this.extendedStringRepresentation;
+
+		let representation = this.extendedStringRepresentation;
 		if (representation.length > truncLength) {
 			// Representation too long: try a short representation
 			representation = this.shortStringRepresentation;
@@ -189,7 +189,6 @@ export class Line {
 		return this.records.map(record => {
 			if (record.name && record.object) {
 				return clean(record.object);
-				// return `${record.name}: ${record.object}`;
 			} else if (record.name) {
 				return record.name;
 			} else if (record.object) {

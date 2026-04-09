@@ -50,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}));
 
 	vscode.workspace.onDidSaveTextDocument(document => {
-		console.log("Document saved", event);
+		console.log("Document saved", document.uri.toString());
 		const editor = playgroundEditors.get(document.uri);
 		if (editor) {
 			editor.run();

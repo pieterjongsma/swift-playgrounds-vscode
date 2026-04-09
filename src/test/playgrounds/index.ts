@@ -2,9 +2,8 @@
 import { assert, AssertionError } from 'chai';
 import * as os from 'os';
 import * as fs from 'fs';
-import * as program from 'commander';
+import { program } from 'commander';
 import * as glob from 'glob';
-import { promisify } from 'util';
 import chalk from 'chalk';
 
 import Playground from 'playground';
@@ -67,7 +66,7 @@ async function playgroundOutput(playgroundFile: string): Promise<JSON[]> {
 async function testPlayground(playgroundFile: string, overwriteExpectation: boolean = false): Promise<boolean> {
     try {
         const expectationFile = pathSiblingReplacingExtension(playgroundFile, ".expectation");
-        const expectation = await promisify(fs.readFile)(expectationFile)
+        const expectation = await fs.promises.readFile(expectationFile)
             .then(buffer => buffer.toString())
             .then(JSON.parse)
             .catch(_ => null);
@@ -83,7 +82,7 @@ async function testPlayground(playgroundFile: string, overwriteExpectation: bool
             console.log(chalk.green(`${playgroundFile}`));
         }
         return true;
-    } catch(err) {
+    } catch(err: any) {
         if (err instanceof AssertionError) {
             console.error(chalk.red(`${playgroundFile}: ${err.message}`));
             return false;
@@ -96,7 +95,7 @@ async function testPlayground(playgroundFile: string, overwriteExpectation: bool
 
 function printSummary(results: boolean[]) {
     const errors = results.filter(result => !result);
-    
+
     console.log("\nFinished");
     if (errors.length > 0) {
         console.error(chalk.red("Some playgrounds failed. Please see results above."));

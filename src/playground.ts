@@ -1,17 +1,16 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 import * as ndjson from 'ndjson';
-import { MD5 } from 'crypto-js';
-import * as rimraf from 'rimraf';
 
 import { copyMissingFiles, copyIfMissing, readdirSyncRecursive, isFile, parentDirMatching } from 'util/file';
-import { run, writableForCallback } from 'util/child_process';
+import { run, simpleRun, writableForCallback } from 'util/child_process';
 import { Writable } from 'stream';
 import { WritableStreamBuffer } from 'stream-buffers';
 
 
-export const PLAYGROUND_REGEX = new RegExp('.*\.playground');
+export const PLAYGROUND_REGEX = new RegExp('.*\\.playground');
 
 
 export class PlaygroundInitializationError extends Error {
@@ -31,7 +30,8 @@ export default class Playground {
 		this._filePath = filePath;
 		this._templatePath = templatePath;
 
-		const scratchPath = path.join(storagePath, `swift-playground-${MD5(this._filePath).toString()}`);
+		const hash = crypto.createHash('md5').update(this._filePath).digest('hex');
+		const scratchPath = path.join(storagePath, `swift-playground-${hash}`);
 		if (!fs.existsSync(scratchPath)) {
 			fs.mkdirSync(scratchPath);
 		}
@@ -42,15 +42,15 @@ export default class Playground {
 		console.log("Preparing Playground at", this._scratchPath);
 
 		// Delete any existing directory (recursively)
-		rimraf.sync(this._scratchPath);
+		fs.rmSync(this._scratchPath, { recursive: true, force: true });
 		fs.mkdirSync(this._scratchPath);
 
 		// Copy all playground files to scratch folder
 		// TODO: This is rather inefficient. Find a better way. Maybe links?
 		const files = readdirSyncRecursive(this._filePath)
 			.filter(isFile)
-			.filter(file => !parentDirMatching(file, new RegExp("^\.build$")))
-			.filter(file => !parentDirMatching(file, new RegExp("^.*\.xcworkspace$")));
+			.filter(file => !parentDirMatching(file, new RegExp("^\\.build$")))
+			.filter(file => !parentDirMatching(file, new RegExp("^.*\\.xcworkspace$")));
 		files.forEach((file: string) => {
 			const targetFile = path.join(this._scratchPath, path.relative(this._filePath, file));
 			copyIfMissing(file, targetFile);
@@ -71,21 +71,14 @@ export default class Playground {
 	public getManifest(stdoutStream?: Writable | undefined, stderrStream?: Writable | undefined): Promise<JSON> {
 		const buffer = new WritableStreamBuffer();
 
-		const cmd = "swiftc";
+		const cmd = "swift";
 		const args = [
-			"--driver-mode=swift",
-			"-L", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/4_2",
-			"-lPackageDescription",
-			"-I", "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/4_2",
-			"Package.swift",
-			"-fileno", "3",
+			"package", "dump-package"
 		];
-		// const args: string[] = [];
 
-		return run(cmd, args, {
-			cwd: this._scratchPath,
-			shell: true
-		}, [stdoutStream, stderrStream, buffer])
+		return simpleRun(cmd, args, {
+			cwd: this._scratchPath
+		}, [buffer, stderrStream])
 		.then(() => buffer.getContentsAsString())
 		.then(contents => {
 			if (!contents) {

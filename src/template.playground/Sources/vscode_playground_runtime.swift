@@ -77,13 +77,9 @@ func __builtin_log_scope_exit(_ sl: Int, _ el: Int, _ sc: Int, _ ec: Int) -> Any
 
 func __builtin_postPrint(_ sl: Int, _ el: Int, _ sc: Int, _ ec: Int) -> AnyObject? {
   // Prevent stdout from being buffered until the end of execution
-  #if stdout
-    fflush(stdout)
-  #endif
-  #if stderr
-    fflush(stderr)
-  #endif
-  
+  fflush(stdout)
+  fflush(stderr)
+
   return LogRecord(api:"builtin_postPrint", range: SourceRange(sl:sl, el:el, sc:sc, ec:ec))
 }
 
@@ -93,7 +89,7 @@ func __builtin_send_data(_ object: AnyObject?) {
       print("Failed to serialize log record")
       return
     }
-    
+
     let handle = FileHandle(fileDescriptor: 3)
     handle.write(data)
 

@@ -18,10 +18,6 @@ const extensionConfig = {
     libraryTarget: 'commonjs2',
     devtoolModuleFilenameTemplate: '../[resource-path]'
   },
-  node: {
-    __dirname: false,
-    __filename: false
-  },
   devtool: 'source-map',
   externals: {
     vscode: 'commonjs vscode'
@@ -33,18 +29,18 @@ const extensionConfig = {
     ]
   },
   plugins: [
-    new CopyPlugin([
-      { from: 'template.playground/**/*', to: '', context: 'src' }
-    ])
+    new CopyPlugin({
+      patterns: [
+        { from: 'template.playground/**/*', to: '', context: 'src' }
+      ]
+    })
   ],
   module: {
     rules: [
       {
         test: /\.swift$/,
         exclude: /node_modules/,
-        use: [
-          { loader: 'file-loader' }
-        ]
+        type: 'asset/resource'
       },
       {
         test: /\.tsx?$/,

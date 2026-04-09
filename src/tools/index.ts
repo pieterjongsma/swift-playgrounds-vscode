@@ -1,6 +1,6 @@
 
 import * as os from 'os';
-import * as program from 'commander';
+import { program } from 'commander';
 
 import Playground from '../playground';
 
